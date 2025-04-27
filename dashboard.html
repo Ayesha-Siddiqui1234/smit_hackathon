@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard with Logout</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.9.1/dist/gsap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f3f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        #dashboard {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            height: 80%;
+        }
+
+        .task-column {
+            width: 30%;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: 80%;
+        }
+
+        .task-column h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        .task-card {
+            background-color: #ffffff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .task-card h4 {
+            margin: 0;
+        }
+
+        .task-card p {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .task-card button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .task-card button:hover {
+            background-color: #ff4500;
+        }
+
+        .add-task-btn {
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .add-task-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Logout Button Style */
+        #logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #logout-btn:hover {
+            background-color: blue;
+        }
+
+        @media (max-width: 768px) {
+            #dashboard {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .task-column {
+                width: 90%;
+                margin-bottom: 20px;
+            }
+
+            #logout-btn {
+                top: 10px;
+                right: 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Logout Button -->
+<button id="logout-btn" onclick="logoutUser()">Logout</button>
+
+<div id="dashboard">
+    <!-- Task Columns -->
+    <div id="todo" class="task-column" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h3>To Do</h3>
+        <button class="add-task-btn" onclick="addTask('To Do')">Add Task</button>
+        <div id="todo-tasks"></div>
+    </div>
+
+    <div id="in-progress" class="task-column" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h3>In Progress</h3>
+        <div id="in-progress-tasks"></div>
+    </div>
+
+    <div id="done" class="task-column" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h3>Done</h3>
+        <div id="done-tasks"></div>
+    </div>
+</div>
+
+<script>
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Add Task Function
+function addTask(status) {
+    const title = prompt("Enter task title:");
+    const description = prompt("Enter task description:");
+    const assignedTo = prompt("Assign task to:");
+
+    db.collection("tasks").add({
+        title: title,
+        description: description,
+        assignedTo: assignedTo,
+        status: status,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        loadTasks(); // Reload tasks after adding
+    }).catch((error) => {
+        console.error("Error adding task: ", error);
+    });
+}
+
+// Load Tasks Function
+function loadTasks() {
+    db.collection("tasks").orderBy("createdAt").get().then(snapshot => {
+        // Clear existing tasks before loading new ones
+        document.getElementById("todo-tasks").innerHTML = '';
+        document.getElementById("in-progress-tasks").innerHTML = '';
+        document.getElementById("done-tasks").innerHTML = '';
+
+        snapshot.forEach(doc => {
+            const task = doc.data();
+            const taskElement = document.createElement('div');
+            taskElement.classList.add('task-card');
+            taskElement.innerHTML = `
+                <h4>${task.title}</h4>
+                <p>${task.description}</p>
+                <button onclick="deleteTask('${doc.id}')">Delete</button>
+            `;
+            document.getElementById(task.status.toLowerCase().replace(" ", "-") + '-tasks').appendChild(taskElement);
+        });
+    });
+}
+
+// Delete Task Function
+function deleteTask(taskId) {
+    db.collection("tasks").doc(taskId).delete().then(() => {
+        loadTasks(); // Reload tasks after deleting
+    }).catch((error) => {
+        console.error("Error deleting task: ", error);
+    });
+}
+
+// Logout User Function
+function logoutUser() {
+    // Add logic for logging out user (e.g., using Firebase Authentication)
+    console.log("Logging out...");
+    // For example: firebase.auth().signOut().then(() => { window.location.href = 'login.html'; });
+
+    // GSAP Animation for logout button click
+    gsap.to("#logout-btn", {
+        scale: 0.8,
+        rotation: 45,
+        duration: 0.3,
+        onComplete: function () {
+            // Redirect or log out action here
+            alert("You have logged out!");
+            // For example: window.location.href = 'login.html';
+        }
+    });
+}
+
+// GSAP Animation for the Logout button on hover
+gsap.fromTo("#logout-btn", {
+    scale: 1,
+    rotation: 0
+}, {
+    scale: 1.1,
+    rotation: 15,
+    duration: 0.5,
+    repeat: -1,
+    yoyo: true
+});
+</script>
+
+</body>
+</html>

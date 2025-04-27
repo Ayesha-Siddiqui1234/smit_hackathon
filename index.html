@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.1/gsap.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .form-container {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    .form-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-header h2 {
+      font-size: 28px;
+      color: #5e5e5e;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      transition: all 0.3s ease;
+    }
+    input:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .form-switch {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .form-switch a {
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .form-switch a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 576px) {
+      .form-container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container" id="form-container">
+    <!-- Sign Up Form -->
+    <div id="signup-form">
+      <div class="form-header">
+        <h2>Sign Up</h2>
+      </div>
+      <input type="email" id="email" placeholder="Enter Email">
+      <input type="password" id="password" placeholder="Enter Password">
+      <button onclick="signupUser()">Sign Up</button>
+      <div class="form-switch">
+        <p>Already have an account? <a onclick="showLoginForm()">Login</a></p>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form" style="display: none;">
+      <div class="form-header">
+        <h2>Login</h2>
+      </div>
+      <input type="email" id="loginEmail" placeholder="Enter Email">
+      <input type="password" id="loginPassword" placeholder="Enter Password">
+      <button onclick="loginUser()">Login</button>
+      <div class="form-switch">
+        <p>Don't have an account? <a onclick="showSignupForm()">Sign Up</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvxFW78nvN8Oqg-481kfGQRnyyF5yPPR4",
+      authDomain: "tracker-2e0d2.firebaseapp.com",
+      projectId: "tracker-2e0d2",
+      storageBucket: "tracker-2e0d2.firebasestorage.app",
+      messagingSenderId: "860760941095",
+      appId: "1:860760941095:web:68b5eb195ed7b97fe2e402"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Sign Up Function
+    window.signupUser = function signupUser() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          console.log("User Signed Up:", userCredential.user);
+          alert("Sign Up Successful!");
+          // Navigate to dashboard after sign up
+          window.location.href = "dashboard.html"; // Change this to your dashboard URL
+        })
+        .catch((error) => {
+          console.error("Error:", error.message);
+          alert("Error: " + error.message);
+        });
+    }
+
+    // Login Function
+    window.loginUser = function loginUser() {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          console.log("User Logged In:", user);
+          alert("Login Successful!");
+          // Navigate to dashboard after login
+          window.location.href = "dashboard.html"; // Change this to your dashboard URL
+        })
+        .catch((error) => {
+          console.error("Error:", error.message);
+          alert("Login Failed: " + error.message);
+        });
+    }
+
+    // Show Sign Up Form
+    window.showSignupForm = function showSignupForm() {
+      document.getElementById("signup-form").style.display = "block";
+      document.getElementById("login-form").style.display = "none";
+      gsap.from("#signup-form", { opacity: 0, y: -50, duration: 1 });
+    }
+
+    // Show Login Form
+    window.showLoginForm = function showLoginForm() {
+      document.getElementById("signup-form").style.display = "none";
+      document.getElementById("login-form").style.display = "block";
+      gsap.from("#login-form", { opacity: 0, y: 50, duration: 1 });
+    }
+
+    // Initial Animation
+    gsap.from("#form-container", { opacity: 0, scale: 0.8, duration: 1 });
+  </script>
+</body>
+</html>
